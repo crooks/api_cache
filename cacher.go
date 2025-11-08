@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/log-go"
-	"github.com/crooks/satinv/cacher/satapi"
+	"github.com/crooks/api_cache/api"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -35,7 +35,7 @@ type Item struct {
 }
 
 type Cache struct {
-	api          *satapi.AuthClient
+	api          *api.AuthClient
 	apiInit      bool // Test if the API has been initialised
 	cacheDir     string
 	content      map[string]Item // A cache of Item structs
@@ -85,7 +85,7 @@ func (c *Cache) GetFilename(itemKey string) (string, error) {
 
 // InitAPI constructs a new instance of the Satellite API
 func (c *Cache) InitAPI(username, password, cert string) {
-	c.api = satapi.NewBasicAuthClient(username, password, cert)
+	c.api = api.NewBasicAuthClient(username, password, cert)
 	c.apiInit = true
 }
 
