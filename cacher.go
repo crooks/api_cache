@@ -182,13 +182,6 @@ func (c *Cache) importExpiry() {
 			c.addItem(k, epochExpiry)
 		}
 	}
-	for k, v := range j.Get("files").Map() {
-		epochExpiry := v.Int()
-		if epochExpiry > ageLimit {
-			log.Debugf("Importing Cache entry: file=%s, expiry=%s", k, timeEpoch(epochExpiry))
-			c.addItem(k, epochExpiry)
-		}
-	}
 }
 
 // WriteExpiryFile writes the cache expiry map to a file in JSON format.
