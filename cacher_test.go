@@ -1,4 +1,4 @@
-package cacher
+package api_cache
 
 import (
 	"errors"

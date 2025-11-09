@@ -1,5 +1,5 @@
 // cacher provides disk caching of json retrieved from APIs
-package cacher
+package api_cache
 
 import (
 	"encoding/json"
