@@ -90,37 +90,6 @@ func TestGetURL(t *testing.T) {
 	}
 }
 
-func TestGetFile(t *testing.T) {
-	tempDir := mkTempDir()
-	defer os.RemoveAll(tempDir)
-	c := NewCacher(tempDir)
-	testItem := "filename.fake"
-	testFile := "test.txt"
-	testString := "Hello World!"
-	f, err := os.Create(path.Join(tempDir, testFile))
-	if err != nil {
-		t.Errorf("Cannot create test file: %v", err)
-	}
-	f.WriteString(testString)
-	f.Close()
-	var testValidity int64 = 2
-	c.AddFile(testItem, testFile, testValidity)
-	fileString, err := c.GetFile(testItem)
-	if err != nil {
-		t.Errorf("%s: %v", testItem, err)
-	}
-	if string(fileString) != testString {
-		t.Errorf("Unexpected file content: Expected=%s, Got=%s", testString, string(fileString))
-	}
-	item, err := c.getItem(testItem)
-	if err != nil {
-		t.Errorf("%s: %v", testItem, err)
-	}
-	if item.url {
-		t.Errorf("item.url should be false when adding a file")
-	}
-}
-
 func TestAddURL(t *testing.T) {
 	tempDir := mkTempDir()
 	defer os.RemoveAll(tempDir)
@@ -142,9 +111,6 @@ func TestAddURL(t *testing.T) {
 	}
 	if item.expiry != 0 {
 		t.Errorf("%s: Expiry should be 0 for new cacheItem", testItem)
-	}
-	if !item.url {
-		t.Errorf("%s: Adding a new URL should set item.url to True", testItem)
 	}
 }
 

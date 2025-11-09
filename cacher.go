@@ -28,7 +28,6 @@ var (
 
 // Item contains variables relating to each item stored in the cache
 type Item struct {
-	url      bool   // If it's not a URL, it's a file
 	expiry   int64  // Epoch expiry time
 	file     string // Filename associated with the cached content
 	validity int64  // Validity period in seconds
@@ -121,14 +120,13 @@ func (c *Cache) HasExpired(itemKey string) (refresh bool, err error) {
 	return
 }
 
-func (c *Cache) addItem(itemKey string, expireEpoch int64, isURL bool) (err error) {
+func (c *Cache) addItem(itemKey string, expireEpoch int64) (err error) {
 	item, ok := c.content[itemKey]
 	if ok {
 		// Cache item already exists.  Why?
 		log.Errorf("Cache item %s should not exist prior to addItem", itemKey)
 	}
 	item.expiry = expireEpoch
-	item.url = isURL
 	c.content[itemKey] = item
 	return
 }
@@ -151,24 +149,11 @@ func (c *Cache) ResetExpire(itemKey string) (err error) {
 // new entry is created in the expiry cache and immediately set to expired.
 func (c *Cache) AddURL(itemKey, fileName string, validity int64) {
 	item, ok := c.content[itemKey]
-	item.url = true
 	item.validity = validity
 	item.file = path.Join(c.cacheDir, fileName)
 	if !ok {
 		// If the item was imported from the expiry file, this will already be set
 		log.Debugf("Cache item %s is unknown.  Marking it as expired.", itemKey)
-		item.expiry = 0
-	}
-	c.content[itemKey] = item
-}
-
-// AddFile registers a file into the content cache.
-func (c *Cache) AddFile(itemKey, fileName string, validity int64) {
-	item, ok := c.content[itemKey]
-	item.url = false
-	item.validity = validity
-	item.file = path.Join(c.cacheDir, fileName)
-	if !ok {
 		item.expiry = 0
 	}
 	c.content[itemKey] = item
@@ -194,14 +179,14 @@ func (c *Cache) importExpiry() {
 		epochExpiry := v.Int()
 		if epochExpiry > ageLimit {
 			log.Debugf("Importing Cache entry: url=%s, expiry=%s", k, timeEpoch(epochExpiry))
-			c.addItem(k, epochExpiry, true)
+			c.addItem(k, epochExpiry)
 		}
 	}
 	for k, v := range j.Get("files").Map() {
 		epochExpiry := v.Int()
 		if epochExpiry > ageLimit {
 			log.Debugf("Importing Cache entry: file=%s, expiry=%s", k, timeEpoch(epochExpiry))
-			c.addItem(k, epochExpiry, false)
+			c.addItem(k, epochExpiry)
 		}
 	}
 }
@@ -218,19 +203,10 @@ func (c *Cache) WriteExpiryFile() error {
 	}
 	// expireMap creates a simple map of item->expireTime (epoch)
 	expireMapURLs := make(map[string]int64)
-	expireMapFiles := make(map[string]int64)
 	for k, v := range c.content {
-		if v.url {
-			expireMapURLs[k] = v.expiry
-		} else {
-			expireMapFiles[k] = v.expiry
-		}
+		expireMapURLs[k] = v.expiry
 	}
 	sj, err = sjson.Set(sj, "urls", expireMapURLs)
-	if err != nil {
-		return err
-	}
-	sj, err = sjson.Set(sj, "files", expireMapFiles)
 	if err != nil {
 		return err
 	}
@@ -285,12 +261,6 @@ func (c *Cache) GetURL(itemKey string) (gj gjson.Result, err error) {
 	if err != nil {
 		return
 	}
-	if !item.url {
-		// This function is exclusively for URLs
-		err = errors.New("requested URL is a file")
-		return
-
-	}
 	refresh, err := c.HasExpired(itemKey)
 	if err != nil {
 		return
@@ -304,23 +274,6 @@ func (c *Cache) GetURL(itemKey string) (gj gjson.Result, err error) {
 	if err != nil {
 		// Failed to read the Cache File, get it from the API instead
 		gj, err = c.getURLFromAPI(itemKey)
-	}
-	return
-}
-
-// GetFile reads a cache item's file from disk and returns it as a byte slice.
-func (c *Cache) GetFile(itemKey string) (b []byte, err error) {
-	item, err := c.getItem(itemKey)
-	if err != nil {
-		return
-	}
-	if item.url {
-		err = errors.New("requested file is a URL")
-		return
-	}
-	b, err = os.ReadFile(item.file)
-	if err != nil {
-		return
 	}
 	return
 }
