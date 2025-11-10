@@ -178,3 +178,14 @@ func TestExportExpiry(t *testing.T) {
 		t.Error("Item cache should not be expired")
 	}
 }
+
+func TestMakeCacheFileName(t *testing.T) {
+	testURL := "https://foo.bar.com:443/somepath"
+	filename, err := MakeCacheFileName(testURL)
+	if err != nil {
+		t.Errorf("MakeCacheFileName failed with: %v", err)
+	}
+	if filename != "foo_bar_com" {
+		t.Errorf("Expected foo_bar_com but got %s", filename)
+	}
+}

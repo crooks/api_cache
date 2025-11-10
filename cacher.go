@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/log-go"
@@ -301,4 +304,18 @@ func timestamp() string {
 func timeEpoch(epoch int64) string {
 	t := time.Unix(epoch, 0)
 	return t.Format(shortDate)
+}
+
+// MakeCacheFilename takes a URL and converts it into a string suitable for making meaningful cache filenames.
+func MakeCacheFileName(urlStr string) (string, error) {
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return "", err
+	}
+	host, _, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		return "", err
+	}
+	hostUnderscore := strings.Replace(host, ".", "_", -1)
+	return hostUnderscore, nil
 }
